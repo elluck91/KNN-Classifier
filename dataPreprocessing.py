@@ -1,8 +1,22 @@
 import nltk
 from nltk.stem.porter import *
-from nltk.corpus import stopwords
 import pandas as pd
 import re
+from collections import defaultdict, Counter
+import pickle
+import numpy as np
+from scipy.sparse import csr_matrix
+
+#==============================================================================
+# PREPROCESSING
+# 
+# 1. READ IN THE TEXT DATA
+# 2. REMOVE ALL NON-ASCII CHARACTERS
+# 3. TOKENIZE WORDS
+# 4. STEM THE WORDS AND TURN TO LOWERCASE
+# 5. SAVE IT TO A FILE
+#==============================================================================
+
 
 def clear_review(text):
     '''
@@ -27,9 +41,10 @@ def clear_review(text):
         
     return temp2
 
-def processFile(path):
+def processFile(path, name):
+    path = path + ".dat"
     df = pd.read_csv(
-        filepath_or_buffer=path, 
+        filepath_or_buffer = path, 
         header=None, 
         sep='\n')
 
@@ -44,7 +59,7 @@ def processFile(path):
     for t in range(0, len(reviews)):
         revs.append(clear_review(reviews[t]))
 
-    file = open("tokenized_reviews.dat","w")
+    file = open(name + ".dat","w")
     for i in range(0, len(revs)):
         file.write(cls[i] + ",")
         for word in revs[i]:
@@ -53,3 +68,56 @@ def processFile(path):
         file.write("\n")
     
     file.close()
+    
+    return revs
+    
+def save_obj(obj, name):
+    with open(name + '.pkl', 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+        
+
+def load_obj(name):
+    with open(name + '.pkl', 'rb') as f:
+        return pickle.load(f)
+    
+def buildDictionary():
+    df = pd.read_csv(
+        filepath_or_buffer='tokenized_reviews.dat', 
+        header=None, 
+        sep='\n')
+    
+    vals = df.iloc[:,:].values
+    reviews = [n[0][2:].split(',') for n in vals]
+    
+    index = defaultdict(list)
+    for i in range(0, len(reviews)):
+        for word in reviews[i]:
+            if i not in index[word]:
+                index[word].append(i)
+        
+#save_obj(index, "dictionary")
+    
+#    read = load_obj("dictionary")
+
+def build_inverted_index(reviews):
+    index = defaultdict(list)
+    for i in range(0, len(reviews)):
+        l2norm = np.sqrt(len(reviews[i]))
+        val = 1/l2norm
+        for word in reviews[i]:
+            print "Review #" + str(i) + ":"
+            if word not in index:
+                index[word].append((i, val))
+            elif (i, val) not in index[word]:
+                print "adding " + str(i) + " to II"
+                index[word].append((i, val))
+                
+    return index
+
+
+
+
+
+
+
+
