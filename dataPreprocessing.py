@@ -25,7 +25,7 @@ def clear_review(text):
     
     Also, it remove stop words, such as "a", "an", etc.
     '''
-
+    print text
     # remove NON_ASCII characters
     temp1 = re.sub(r'\W+',' ', text)
     # word tokenize
@@ -41,7 +41,7 @@ def clear_review(text):
         
     return temp2
 
-def processFile(path, name):
+def processLabeledFile(path, name):
     path = path + ".dat"
     df = pd.read_csv(
         filepath_or_buffer = path, 
@@ -67,6 +67,29 @@ def processFile(path, name):
             
         file.write("\n")
     
+    file.close()
+    
+    return revs
+
+def processFile(path, name):
+    path = path + ".dat"
+    df = pd.read_csv(
+        filepath_or_buffer = path, 
+        header=None, 
+        sep='\n')
+
+    vals = df.iloc[:,:].values
+    reviews = [n[0][:] for n in vals]
+    
+    revs = []
+    for t in range(0, len(reviews)):
+        revs.append(clear_review(reviews[t]))
+
+    file = open(name + ".dat","w")
+    for i in range(0, len(revs)):
+        for word in revs[i]:
+            file.write(word + ",")
+        file.write("\n")
     file.close()
     
     return revs
